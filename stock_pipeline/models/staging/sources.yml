@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: raw
+    database: stock_analytics
+    schema: raw
+    tables:
+      - name: stock_prices
