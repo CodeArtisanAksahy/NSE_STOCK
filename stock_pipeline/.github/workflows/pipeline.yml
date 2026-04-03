@@ -1,0 +1,60 @@
+name: Stock Data Pipeline CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 15 * * 1-5'
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance pandas snowflake-connector-python dbt-snowflake
+
+      - name: Create dbt profile
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml <<EOF
+          stock_pipeline:
+            outputs:
+              dev:
+                type: snowflake
+                account: $SNOWFLAKE_ACCOUNT
+                user: $SNOWFLAKE_USER
+                password: $SNOWFLAKE_PASSWORD
+                role: ACCOUNTADMIN
+                warehouse: COMPUTE_WH
+                database: stock_analytics
+                schema: raw
+                threads: 1
+            target: dev
+          EOF
+
+      - name: Run ingestion
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: python ingest_stocks.py
+
+      - name: Run dbt
+        run: |
+          dbt deps --project-dir . --profiles-dir ~/.dbt
+          dbt test --project-dir . --profiles-dir ~/.dbt
+          dbt run --project-dir . --profiles-dir ~/.dbt
