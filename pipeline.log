@@ -1,0 +1,7 @@
+Starting stock pipeline - Wed Apr  1 15:30:01 IST 2026
+Traceback (most recent call last):
+  File "/Users/akshaythakur/stock_pipeline/ingest_stocks.py", line 1, in <module>
+    import yfinance as yf
+ModuleNotFoundError: No module named 'yfinance'
+/Users/akshaythakur/stock_pipeline/run_pipeline.sh: line 11: dbt: command not found
+Pipeline completed - Wed Apr  1 15:30:01 IST 2026

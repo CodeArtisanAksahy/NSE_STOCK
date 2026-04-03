@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: stg_stock_prices
+    columns:
+      - name: stock_symbol
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'WIPRO.NS']
+      - name: trade_date
+        tests:
+          - not_null
+      - name: close_price
+        tests:
+          - not_null
+
+  - name: mart_stock_summary
+    columns:
+      - name: stock_symbol
+        tests:
+          - not_null
+      - name: trade_date
+        tests:
+          - not_null
+      - name: close_price
+        tests:
+          - not_null

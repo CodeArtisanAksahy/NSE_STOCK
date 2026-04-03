@@ -1,0 +1,59 @@
+name: NSE Stock Pipeline CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 15 * * 1-5'
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install yfinance pandas snowflake-connector-python dbt-snowflake
+
+      - name: Create dbt profiles
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << 'PROFILE'
+          stock_pipeline:
+            outputs:
+              dev:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user: ${{ secrets.SNOWFLAKE_USER }}
+                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+                role: ACCOUNTADMIN
+                warehouse: COMPUTE_WH
+                database: stock_analytics
+                schema: raw
+                threads: 1
+            target: dev
+          PROFILE
+
+      - name: Ingest stock data
+        run: python ingest_stocks.py
+
+      - name: Run dbt tests
+        run: |
+          cd stock_pipeline
+          dbt test
+
+      - name: Run dbt models
+        run: |
+          cd stock_pipeline
+          dbt run
+
+      - name: Notify success
+        run: echo "Pipeline completed successfully!"
